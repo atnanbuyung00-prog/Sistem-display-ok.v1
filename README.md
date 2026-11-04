@@ -2,9 +2,9 @@
 
 # Sistem Informasi Jadwal Operasi dan Display OK
 
-Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar operasi Rumah Sakit Mutiara Aini. Identitas dan tujuan ini berasal dari `composer.json` serta controller dan tampilan di dalam `okrsma1.zip`.
+Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar operasi Rumah Sakit Mutiara Aini. Identitas dan tujuan ini berasal dari `composer.json` serta controller dan tampilan di folder [`okrsma1/`](okrsma1/).
 
-**[Instalasi](#instalasi-lokal) · [Menjalankan](#menjalankan) · [Penggunaan](#penggunaan) · [Status](#status-saat-ini)**
+**[Galeri UI/UX](#galeri-uiux) · [Instalasi](#instalasi-lokal) · [Menjalankan](#menjalankan) · [Penggunaan](#penggunaan) · [Status](#status-saat-ini)**
 
 | Teknologi | Distribusi source | Verifikasi |
 | --- | --- | --- |
@@ -15,6 +15,41 @@ Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar oper
 - **Ingin mencoba aplikasi?** Ikuti [kebutuhan instalasi](#kebutuhan-instalasi) dan [instalasi lokal](#instalasi-lokal), lalu [jalankan server](#menjalankan).
 - **Ingin mengenal proyek?** Baca [fitur yang ada](#fitur-yang-ada-di-source) dan [struktur aplikasi](#struktur-aplikasi).
 - **Ingin melanjutkan pengembangan?** Periksa [pekerjaan yang belum selesai](#yang-masih-perlu-dilengkapi-dan-diverifikasi).
+
+## Galeri UI/UX
+
+Pratinjau berikut disusun ulang berdasarkan struktur Blade dan palet warna pada source. **Ini ilustrasi dokumentasi, bukan screenshot aplikasi yang sedang berjalan.** Tata letak disederhanakan; seluruh nama, jadwal, dan angka menggunakan data simulasi. Gambar tidak menandakan fitur telah lolos pengujian.
+
+### Dashboard admin
+
+Ringkasan aktivitas, tombol cepat, dan area grafik untuk membantu admin menemukan informasi utama.
+
+![Pratinjau ilustratif dashboard admin dengan data simulasi](docs/ui/dashboard.svg)
+
+Sumber tampilan: [dashboard Blade](okrsma1/resources/views/admin/dashboard.blade.php) dan [layout admin](okrsma1/resources/views/layouts/admin.blade.php).
+
+### Input dan daftar jadwal operasi
+
+Pemilihan tanggal, informasi pasien dan tindakan, ruang operasi, tim, serta daftar jadwal pada tanggal terpilih.
+
+![Pratinjau ilustratif formulir dan daftar jadwal operasi dengan data simulasi](docs/ui/jadwal-operasi.svg)
+
+Sumber tampilan: [halaman jadwal](okrsma1/resources/views/admin/schedules/index.blade.php) dan [field formulir](okrsma1/resources/views/admin/schedules/_form_fields.blade.php).
+
+### Display TV
+
+Layar informasi jadwal dengan penanda ruang OK, CITO, jam, serta susunan petugas Dinas, RR, dan On Call.
+
+![Pratinjau ilustratif layar display TV dengan data simulasi](docs/ui/display-tv.svg)
+
+Sumber tampilan: [display Blade](okrsma1/resources/views/display/index.blade.php).
+
+| Area | Fokus antarmuka |
+| --- | --- |
+| Navigasi admin | Sidebar hijau dan pengelompokan menu |
+| Dashboard | Tombol cepat, ringkasan angka, dan grafik |
+| Jadwal | Pemilihan tanggal dan pengelompokan field |
+| Display TV | Tabel informasi, warna ruang OK, dan petugas shift |
 
 ## Status saat ini
 
