@@ -1,0 +1,15 @@
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+RewriteEngine On
+RewriteRule (^|/)\. - [F,L]
+RewriteRule ^(?:app|bootstrap|config|database|resources|routes|storage|vendor|tests|node_modules)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|phpunit\.xml|.*\.(?:sql|sqlite|zip|bak|log|txt|md))$ - [F,L,NC]
+RewriteRule ^(?:public/)?(?:images|uploads)/.*\.(?:php[0-9]?|phtml|phar|cgi|pl)(?:/.*)?$ - [F,L,NC]
+RewriteRule ^(?:images|uploads)/(.*)$ public/$0 [L]
+RewriteRule ^public/(?!images/|uploads/).* - [F,L,NC]
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^ index.php [L]

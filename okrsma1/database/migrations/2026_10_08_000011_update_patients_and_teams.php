@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Database\Migrations\Migration; use Illuminate\Database\Schema\Blueprint; use Illuminate\Support\Facades\Schema;
+return new class extends Migration { public function up():void{Schema::table('patients',function(Blueprint $t){$t->string('marital_status',30)->default('Belum Menikah')->after('birth_date');}); Schema::table('surgical_teams',function(Blueprint $t){$t->foreignId('profession_id')->nullable()->after('name')->constrained('professions')->nullOnDelete();});} public function down():void{Schema::table('surgical_teams',function(Blueprint $t){$t->dropForeign(['profession_id']);$t->dropColumn('profession_id');}); Schema::table('patients',function(Blueprint $t){$t->dropColumn('marital_status');});} };

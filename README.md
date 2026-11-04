@@ -8,7 +8,7 @@ Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar oper
 
 | Teknologi | Distribusi source | Verifikasi |
 | --- | --- | --- |
-| PHP `^8.2` · Laravel `^12.0` · Blade | `okrsma1.zip` | Tinjauan statis; belum diuji berjalan |
+| PHP `^8.2` · Laravel `^12.0` · Blade | `okrsma1/` (hasil ekstraksi) | Tinjauan statis; belum diuji berjalan |
 
 ## Mulai dari sini
 
@@ -18,7 +18,7 @@ Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar oper
 
 ## Status saat ini
 
-Ditinjau pada 5 November 2026. Source aplikasi tersedia **di dalam arsip `okrsma1.zip`**, belum sebagai direktori source langsung di repositori. Selain README dan arsip aplikasi, direktori `docs/` menyediakan aset dokumentasi.
+Ditinjau pada 5 November 2026. Source aplikasi telah diekstrak ke **[`okrsma1/`](okrsma1/)** agar dapat dibaca langsung di GitHub. Arsip asli `okrsma1.zip` tetap tersedia, dan `docs/` berisi aset dokumentasi. Folder source hasil ekstraksi tidak menyertakan `vendor/`, database `laravel_db`, sesi, cache hasil pemakaian, log, maupun foto profil unggahan lama. Data contoh pasien, staf, dan jadwal klinis di seeder tidak disalin; seeder hasil ekstraksi hanya membuat akun admin awal.
 
 Implementasi sudah memiliki route, controller, model, Blade view, migrasi, dan seeder. Peninjauan dilakukan secara statis; instalasi, migrasi database, dan alur aplikasi belum diuji berjalan. Keberadaan kode tidak berarti seluruh fitur sudah lolos pengujian atau siap produksi. Tidak ditemukan direktori pengujian aplikasi `tests/` di dalam arsip.
 
@@ -37,7 +37,7 @@ Implementasi sudah memiliki route, controller, model, Blade view, migrasi, dan s
 
 ## Struktur aplikasi
 
-Setelah arsip diekstrak, direktori `okrsma1/` berisi:
+Direktori [`okrsma1/`](okrsma1/) berisi:
 
 | Lokasi | Isi |
 | --- | --- |
@@ -46,7 +46,7 @@ Setelah arsip diekstrak, direktori `okrsma1/` berisi:
 | `routes/web.php` | Route halaman dan endpoint data |
 | `resources/views/` | Tampilan Blade admin, login, dan display |
 | `database/migrations/` | Definisi dan perubahan skema database |
-| `database/seeders/DatabaseSeeder.php` | Akun awal dan data contoh |
+| `database/seeders/DatabaseSeeder.php` | Akun admin awal (tanpa data pasien/staf) |
 | `composer.json`, `composer.lock` | Dependensi PHP |
 | `public/` | Entry point web dan aset publik |
 
@@ -63,12 +63,11 @@ Setelah arsip diekstrak, direktori `okrsma1/` berisi:
 
 Langkah berikut diturunkan dari source dan **belum diverifikasi melalui eksekusi**. Gunakan database lokal baru untuk percobaan.
 
-1. Ambil dan ekstrak source:
+1. Ambil source yang sudah diekstrak:
 
    ```bash
-   git clone https://github.com/atnanbuyung00-prog/https-github.com-atnanbuyung00-prog.git
-   cd https-github.com-atnanbuyung00-prog
-   unzip okrsma1.zip
+   git clone https://github.com/atnanbuyung00-prog/Sistem-display-ok.v1.git
+   cd Sistem-display-ok.v1
    cd okrsma1
    ```
 
@@ -104,7 +103,7 @@ Langkah berikut diturunkan dari source dan **belum diverifikasi melalui eksekusi
    php artisan migrate
    ```
 
-   Arsip membawa `vendor/` dan cache hasil pemakaian sebelumnya; jangan menjadikan berkas tersebut bukti bahwa instalasi lokal sudah benar. Gunakan database baru, bukan langsung memakai berkas `laravel_db` yang ikut dalam arsip.
+   Folder hasil ekstraksi tidak membawa `vendor/` dan cache lama; dependensi dipasang melalui Composer. Gunakan database lokal baru. Berkas `laravel_db` yang ada di arsip asli tidak disalin ke folder source.
 
 4. Opsional, hanya pada database percobaan baru:
 
@@ -112,7 +111,7 @@ Langkah berikut diturunkan dari source dan **belum diverifikasi melalui eksekusi
    php artisan db:seed
    ```
 
-   Seeder membuat akun `admin` dengan password `admin` beserta data contoh. Segera ubah password melalui profil sebelum memberikan akses kepada pihak lain. Jangan jalankan seeder tanpa meninjau isinya pada database yang sudah berisi data: seeder menggunakan `updateOrCreate` dan dapat memperbarui akun/data yang cocok.
+   Seeder hasil ekstraksi hanya membuat akun `admin` dengan password `admin`; data pasien/staf dan jadwal contoh telah dihilangkan. Segera ubah password melalui profil sebelum memberikan akses kepada pihak lain. Seeder hasil ekstraksi menggunakan `firstOrCreate`, sehingga akun admin yang sudah ada tidak ditimpa. Tetap tinjau seeder sebelum menjalankannya pada database berisi data.
 
 ## Menjalankan
 
@@ -144,7 +143,7 @@ Server bawaan ini untuk pengembangan lokal. Konfigurasi deployment produksi belu
 
 ## Yang masih perlu dilengkapi dan diverifikasi
 
-- Ekstrak source ke Git agar perubahan dapat ditinjau tanpa membuka arsip; tambahkan `.env.example` yang aman.
+- Source telah diekstrak ke Git. Tambahkan `.env.example` yang aman.
 - Pastikan versi PHP, ekstensi, database, dan prosedur instalasi melalui uji pada lingkungan bersih.
 - Perbaiki dan uji route ekspor shift. Kode penugasan RR juga menjalankan perubahan kolom khusus MySQL dengan pengecualian yang diabaikan; kompatibilitas SQLite dan hak perubahan skema perlu diuji.
 - Tambahkan pengujian autentikasi/permission, CRUD jadwal, shift, display, cetak, dan ekspor.
