@@ -1,10 +1,24 @@
+![Jadwal Operasi dan Display OK — RS Mutiara Aini](docs/banner.svg)
+
 # Sistem Informasi Jadwal Operasi dan Display OK
 
 Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar operasi Rumah Sakit Mutiara Aini. Identitas dan tujuan ini berasal dari `composer.json` serta controller dan tampilan di dalam `okrsma1.zip`.
 
+**[Instalasi](#instalasi-lokal) · [Menjalankan](#menjalankan) · [Penggunaan](#penggunaan) · [Status](#status-saat-ini)**
+
+| Teknologi | Distribusi source | Verifikasi |
+| --- | --- | --- |
+| PHP `^8.2` · Laravel `^12.0` · Blade | `okrsma1.zip` | Tinjauan statis; belum diuji berjalan |
+
+## Mulai dari sini
+
+- **Ingin mencoba aplikasi?** Ikuti [kebutuhan instalasi](#kebutuhan-instalasi) dan [instalasi lokal](#instalasi-lokal), lalu [jalankan server](#menjalankan).
+- **Ingin mengenal proyek?** Baca [fitur yang ada](#fitur-yang-ada-di-source) dan [struktur aplikasi](#struktur-aplikasi).
+- **Ingin melanjutkan pengembangan?** Periksa [pekerjaan yang belum selesai](#yang-masih-perlu-dilengkapi-dan-diverifikasi).
+
 ## Status saat ini
 
-Ditinjau pada 5 November 2026. Source aplikasi tersedia **di dalam arsip `okrsma1.zip`**, belum sebagai direktori source langsung di repositori. Isi root saat peninjauan adalah README ini dan arsip tersebut.
+Ditinjau pada 5 November 2026. Source aplikasi tersedia **di dalam arsip `okrsma1.zip`**, belum sebagai direktori source langsung di repositori. Selain README dan arsip aplikasi, direktori `docs/` menyediakan aset dokumentasi.
 
 Implementasi sudah memiliki route, controller, model, Blade view, migrasi, dan seeder. Peninjauan dilakukan secara statis; instalasi, migrasi database, dan alur aplikasi belum diuji berjalan. Keberadaan kode tidak berarti seluruh fitur sudah lolos pengujian atau siap produksi. Tidak ditemukan direktori pengujian aplikasi `tests/` di dalam arsip.
 
