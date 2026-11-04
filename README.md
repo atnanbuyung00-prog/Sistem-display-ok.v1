@@ -18,7 +18,7 @@ Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar oper
 
 ## Status saat ini
 
-Ditinjau pada 5 November 2026. Source aplikasi telah diekstrak ke **[`okrsma1/`](okrsma1/)** agar dapat dibaca langsung di GitHub. Arsip asli `okrsma1.zip` tetap tersedia, dan `docs/` berisi aset dokumentasi. Folder source hasil ekstraksi tidak menyertakan `vendor/`, database `laravel_db`, sesi, cache hasil pemakaian, log, maupun foto profil unggahan lama. Data contoh pasien, staf, dan jadwal klinis di seeder tidak disalin; seeder hasil ekstraksi hanya membuat akun admin awal.
+Ditinjau pada 5 November 2026. Source aplikasi telah diekstrak ke **[`okrsma1/`](okrsma1/)** agar dapat dibaca langsung di GitHub. Arsip asli `okrsma1.zip` telah dihapus dari branch saat ini; `docs/` berisi aset dokumentasi. Folder source hasil ekstraksi tidak menyertakan `vendor/`, database `laravel_db`, sesi, cache hasil pemakaian, log, maupun foto profil unggahan lama. Data contoh pasien, staf, dan jadwal klinis di seeder tidak disalin; seeder hasil ekstraksi hanya membuat akun admin awal.
 
 Implementasi sudah memiliki route, controller, model, Blade view, migrasi, dan seeder. Peninjauan dilakukan secara statis; instalasi, migrasi database, dan alur aplikasi belum diuji berjalan. Keberadaan kode tidak berarti seluruh fitur sudah lolos pengujian atau siap produksi. Tidak ditemukan direktori pengujian aplikasi `tests/` di dalam arsip.
 
