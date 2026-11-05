@@ -47,20 +47,49 @@
 
 <div class="card p-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <div><h4 class="mb-1"><i class="bi bi-calendar-check me-2"></i>Jadwal Hari Ini</h4><small class="text-muted">Urut berdasarkan jam operasi.</small></div>
-        <div class="d-flex gap-2"><span class="badge rounded-pill bg-primary align-self-center">{{ $todayCount }} jadwal</span><a href="{{ route('admin.schedules.manage', ['date' => $today]) }}" class="btn btn-outline-primary"><i class="bi bi-list-check"></i> Kelola</a></div>
+        <div>
+            <h4 class="mb-1"><i class="bi bi-calendar-check me-2 text-success"></i>Jadwal Hari Ini</h4>
+            <small class="text-muted">Urut berdasarkan jam operasi.</small>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge rounded-pill px-3 py-2" style="background:#eaf6f1;color:#1b7a5a;font-weight:700;border:1px solid #c7e6d8;">{{ $todayCount }} jadwal</span>
+            <a href="{{ route('admin.schedules.manage', ['date' => $today]) }}" class="btn btn-outline-primary btn-sm px-3"><i class="bi bi-list-check me-1"></i>Kelola</a>
+        </div>
     </div>
     <div class="today-schedule-list">
     @forelse($todaySchedules as $s)
+        @php
+            $okClass = match(trim((string)$s->ok_level)) {
+                'OK 1' => 'ok1',
+                'OK 2' => 'ok2',
+                'OK 3' => 'ok3',
+                default => 'ok-default'
+            };
+            $teamClean = $s->surgical_team_names ? preg_replace('/\s*,\s*/', ', ', trim($s->surgical_team_names)) : 'Tim belum dipilih';
+        @endphp
         <div class="today-row">
-            <div class="today-time"><i class="bi bi-clock"></i><strong>{{ substr($s->operation_time,0,5) }}</strong></div>
-            <div class="today-main"><strong>{{ $s->patient?->name ?? '-' }}</strong><span>{{ $s->procedure ?: 'Tindakan belum diisi' }}</span></div>
-            <span class="badge {{ $s->ok_level==='OK 2'?'bg-success':($s->ok_level==='OK 3'?'bg-purple':'bg-primary') }}">{{ $s->ok_level }}</span>
-            @if($s->cito)<span class="badge bg-danger">CITO</span>@endif
-            <div class="today-team"><i class="bi bi-people-fill"></i> {{ $s->surgical_team_names ?: 'Tim belum dipilih' }}</div>
+            <div class="today-time">
+                <i class="bi bi-clock"></i>
+                <strong>{{ substr($s->operation_time, 0, 5) }}</strong>
+                <span class="today-time-wib">WIB</span>
+            </div>
+            <div class="today-main">
+                <strong>{{ $s->patient?->name ?? '-' }}</strong>
+                <span><i class="bi bi-activity me-1 text-muted"></i>{{ $s->procedure ?: 'Tindakan belum diisi' }}</span>
+            </div>
+            <div class="today-badges">
+                <span class="ok-pill {{ $okClass }}">{{ $s->ok_level }}</span>
+                @if($s->cito)
+                    <span class="cito-pill">CITO</span>
+                @endif
+            </div>
+            <div class="today-team" title="{{ $teamClean }}">
+                <i class="bi bi-people-fill"></i>
+                <span>{{ $teamClean }}</span>
+            </div>
         </div>
     @empty
-        <div class="text-center text-muted py-5"><i class="bi bi-calendar-x fs-2 d-block mb-2"></i>Belum ada jadwal operasi hari ini.</div>
+        <div class="text-center text-muted py-5"><i class="bi bi-calendar-x fs-2 d-block mb-2 text-muted"></i>Belum ada jadwal operasi hari ini.</div>
     @endforelse
     </div>
 </div>
@@ -72,14 +101,126 @@
 .analytics-title{font-weight:700;margin-bottom:8px;color:#15553e}
 .analytics-title i{margin-right:7px;color:#1b7a5a}
 .chart-empty{position:absolute;inset:80px 20px 20px;display:grid;place-items:center;color:#8a98a3}
-.today-schedule-list{display:flex;flex-direction:column;gap:8px}
-.today-row{display:grid;grid-template-columns:110px minmax(180px,1.4fr) auto auto minmax(220px,1fr);align-items:center;gap:14px;padding:13px 15px;border:1px solid #dcece3;border-radius:13px;background:#fff;transition:.18s}
-.today-row:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(27,122,90,.08)}
-.today-time{display:flex;align-items:center;gap:8px;color:#1b7a5a}
-.today-main strong,.today-main span{display:block}
-.today-main span{font-size:.82rem;color:#7b8993;margin-top:2px}
-.today-team{font-size:.82rem;color:#60717c}
-.bg-purple{background:#7c3aed!important}
+.today-schedule-list{display:flex;flex-direction:column;gap:10px}
+.today-row{
+    display:grid;
+    grid-template-columns:105px minmax(180px,1.4fr) 115px minmax(200px,1.2fr);
+    align-items:center;
+    gap:16px;
+    padding:12px 18px;
+    border:1px solid #dcece3;
+    border-radius:14px;
+    background:#fff;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.today-row:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(27,122,90,.09);
+    border-color:#a9d6bf;
+}
+.today-time{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#1b7a5a;
+    font-size:.95rem;
+}
+.today-time i{
+    font-size:1.1rem;
+    color:#1b7a5a;
+}
+.today-time strong{
+    font-weight:800;
+    letter-spacing:.3px;
+}
+.today-time-wib{
+    font-size:.72rem;
+    color:#7b8993;
+    font-weight:600;
+}
+.today-main strong{
+    display:block;
+    font-size:.95rem;
+    color:#153243;
+    font-weight:700;
+}
+.today-main span{
+    display:block;
+    font-size:.82rem;
+    color:#64748b;
+    margin-top:2px;
+}
+.today-badges{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    flex-wrap:wrap;
+}
+.ok-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:58px;
+    padding:4px 10px;
+    border-radius:8px;
+    font-size:.78rem;
+    font-weight:800;
+    color:#fff !important;
+    line-height:1;
+    letter-spacing:.3px;
+    box-shadow:0 2px 5px rgba(0,0,0,.08);
+}
+.ok-pill.ok1{
+    background:#1284df !important;
+}
+.ok-pill.ok2{
+    background:#0bb52e !important;
+}
+.ok-pill.ok3{
+    background:#8b22c9 !important;
+}
+.ok-pill.ok-default{
+    background:#1b7a5a !important;
+}
+.cito-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px 8px;
+    border-radius:8px;
+    font-size:.75rem;
+    font-weight:800;
+    color:#fff !important;
+    background:#dc2626 !important;
+    line-height:1;
+    letter-spacing:.5px;
+    box-shadow:0 2px 5px rgba(220,38,38,.2);
+}
+.today-team{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:.83rem;
+    color:#475569;
+    background:#f8faf9;
+    padding:6px 12px;
+    border-radius:9px;
+    border:1px solid #e7efe9;
+    line-height:1.35;
+}
+.today-team i{
+    color:#1b7a5a;
+    font-size:1rem;
+    flex-shrink:0;
+}
+.today-team span{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+}
 .period-btn,.analysis-btn{transition:.18s}
 .period-btn:hover,.analysis-btn:hover{transform:translateY(-1px)}
 
@@ -92,7 +233,11 @@
 .quick-action b,.quick-action small{display:block}
 .quick-action small{color:#71808c;margin-top:2px}
 
-@media(max-width:900px){.today-row{grid-template-columns:90px 1fr auto}.today-team{grid-column:2/-1}.today-row .badge:nth-of-type(2){grid-column:3}.today-main{min-width:0}}
+@media(max-width:992px){
+    .today-row{grid-template-columns:90px 1fr auto;gap:10px}
+    .today-team{grid-column:1/-1;margin-top:4px}
+    .today-main{min-width:0}
+}
 </style>
 @endpush
 

@@ -53,9 +53,30 @@
         <div class="text-center"><img src="{{ asset('images/logo-rsma.png') }}" style="width:250px">
             <h4 class="mt-3 fw-bold text-primary">Login Administrator</h4>
             <p class="text-muted">Sistem Jadwal Operasi</p>
-        </div>@if($errors->any())<div class="alert alert-danger">{{ $errors->first() }}</div>@endif<form method="POST" action="{{ route('login.submit') }}">@csrf<div class="mb-3"><label class="form-label">Username</label><input class="form-control form-control-lg" name="username" value="{{ old('username') }}" autofocus></div>
+        </div>
+        @if(session('error'))
+        <div class="alert alert-warning border-0 small d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+            <div>{{ session('error') }}</div>
+        </div>
+        @endif
+        @if(session('success'))
+        <div class="alert alert-success border-0 small d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+            <div>{{ session('success') }}</div>
+        </div>
+        @endif
+        @if($errors->any())
+        <div class="alert alert-danger border-0 small d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+            <div>{{ $errors->first() }}</div>
+        </div>
+        @endif
+        <form method="POST" action="{{ route('login.submit') }}" id="loginForm">
+            @csrf
+            <div class="mb-3"><label class="form-label">Username</label><input class="form-control form-control-lg" name="username" value="{{ old('username') }}" autofocus required></div>
             <div class="mb-3"><label class="form-label">Password</label>
-                <div class="input-group"><input id="loginPassword" type="password" class="form-control form-control-lg" name="password" autocomplete="current-password"><button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Tampilkan password">👁</button></div>
+                <div class="input-group"><input id="loginPassword" type="password" class="form-control form-control-lg" name="password" autocomplete="current-password" required><button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Tampilkan password">👁</button></div>
             </div>
             <div class="mb-3 d-flex justify-content-between align-items-center">
                 <div class="form-check">
@@ -63,7 +84,7 @@
                     <label class="form-check-label text-muted small" for="rememberMe">Ingat saya (tetap login)</label>
                 </div>
             </div>
-            <button class="btn btn-primary btn-lg w-100">Masuk</button>
+            <button class="btn btn-primary btn-lg w-100" type="submit" id="btnLogin">Masuk</button>
         </form>
     </div>
     <script>
@@ -71,6 +92,22 @@
             const p = document.getElementById("loginPassword");
             p.type = p.type === "password" ? "text" : "password";
             this.setAttribute("aria-label", p.type === "password" ? "Tampilkan password" : "Sembunyikan password");
+        });
+
+        // If page is restored from back-forward cache or tab wake-up, reload to ensure fresh CSRF token
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+
+        // Prevent double submit and give instant feedback
+        document.getElementById('loginForm')?.addEventListener('submit', function() {
+            const btn = document.getElementById('btnLogin');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
+            }
         });
     </script>
 </body>

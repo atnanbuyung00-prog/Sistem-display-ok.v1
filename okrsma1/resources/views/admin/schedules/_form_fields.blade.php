@@ -11,7 +11,7 @@ $selectedTeams = old('surgical_team_ids', $schedule->exists ? $schedule->surgica
         <label class="form-label fw-semibold">Nama Pasien</label>
         <input type="text" name="patient_name" id="patient_name" class="form-control input-animated" list="patient_list" value="{{ old('patient_name',$patient?->name) }}" placeholder="Ketik nama pasien..." autocomplete="off" required>
         <datalist id="patient_list">
-            @foreach($patients as $p)<option value="{{ $p->name }}" data-rm="{{ $p->medical_record_no }}" data-gender="{{ $p->gender }}">{{ $p->name }} — {{ $p->medical_record_no ?: 'Tanpa No. RM' }}</option>@endforeach
+            @foreach($patients as $p)<option value="{{ $p->name }}" data-id="{{ $p->id }}" data-rm="{{ $p->medical_record_no }}" data-gender="{{ $p->gender }}">{{ $p->name }} — {{ $p->medical_record_no ?: 'Tanpa No. RM' }}</option>@endforeach
         </datalist>
         <div class="small-muted mt-1">Bisa memilih pasien lama atau langsung mengetik pasien baru.</div>
     </div>
@@ -45,7 +45,7 @@ $selectedTeams = old('surgical_team_ids', $schedule->exists ? $schedule->surgica
         <label class="form-label">Tim Bedah <span class="text-muted">(boleh lebih dari 1)</span></label>
         <div class="input-group"><input type="text" id="team_search" class="form-control" list="team_list" placeholder="Pilih / ketik nama perawat atau bidan..." autocomplete="off"><button type="button" class="btn btn-outline-primary" id="add_team">Tambah</button></div>
         <datalist id="team_list">@foreach($teams as $x)<option value="{{ $x->name }}" data-id="{{ $x->id }}">{{ $x->name }} — {{ $x->profession?->name ?? $x->role ?? 'Perawat' }}</option>@endforeach</datalist>
-        <div id="team_chips" class="border rounded p-2 mt-2" style="min-height:48px">@foreach($teams->whereIn('id',$selectedTeams) as $x)<span class="badge rounded-pill text-bg-primary me-1 mb-1 team-chip" data-id="{{ $x->id }}" data-name="{{ $x->name }}">{{ $x->name }} <small class="opacity-75">({{ $x->profession?->name ?? $x->role ?? 'Perawat' }})</small> <button type="button" class="btn-close btn-close-white ms-1 remove-team"></button><input type="hidden" name="surgical_team_ids[]" value="{{ $x->id }}"><input type="hidden" name="surgical_team_names[]" value="{{ $x->name }}"></span>@endforeach @if(empty($selectedTeams))<span id="team_empty" class="text-muted small">Belum ada anggota dipilih.</span>@endif</div>
+        <div id="team_chips" class="border rounded p-2 mt-2" style="min-height:48px">@foreach($teams->whereIn('id',$selectedTeams) as $x)<span class="badge rounded-pill text-bg-primary me-1 mb-1 team-chip" data-id="{{ $x->id }}" data-name="{{ $x->name }}">{{ $x->name }} <small class="opacity-75">({{ $x->profession?->name ?? $x->role ?? 'Perawat' }})</small> <button type="button" class="btn-close btn-close-white ms-1 remove-team"></button><input type="hidden" name="surgical_team_ids[]" value="{{ $x->id }}"></span>@endforeach @if(empty($selectedTeams))<span id="team_empty" class="text-muted small">Belum ada anggota dipilih.</span>@endif</div>
     </div>
 
     <div class="col-md-3"><label class="form-label">Status</label><select name="status" class="form-select">
@@ -135,36 +135,56 @@ $selectedTeams = old('surgical_team_ids', $schedule->exists ? $schedule->surgica
         const teamInput = document.getElementById('team_search'),
             list = document.getElementById('team_list'),
             chips = document.getElementById('team_chips');
+        const cleanStr = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-        function addTeam() {
-            const name = (teamInput.value || '').trim();
+        function addSingleTeam(rawName) {
+            const name = (rawName || '').trim();
             if (!name) return;
-            const exists = [...chips.querySelectorAll('.team-chip')].some(x => norm(x.dataset.name) === norm(name));
-            if (exists) {
-                teamInput.value = '';
-                return;
-            }
+            const nameClean = cleanStr(name);
+            const exists = [...chips.querySelectorAll('.team-chip')].some(x => norm(x.dataset.name) === norm(name) || (x.dataset.clean && x.dataset.clean === nameClean));
+            if (exists) return;
             let m = null;
             list.querySelectorAll('option').forEach(o => {
-                if (norm(o.value) === norm(name)) m = o;
+                if (norm(o.value) === norm(name) || cleanStr(o.value) === nameClean) m = o;
             });
             document.getElementById('team_empty')?.remove();
             const chip = document.createElement('span');
             chip.className = 'badge rounded-pill text-bg-primary me-1 mb-1 team-chip';
             chip.dataset.id = m ? m.dataset.id : '';
-            chip.dataset.name = name;
+            chip.dataset.name = m ? m.value : name;
+            chip.dataset.clean = nameClean;
             const prof = m ? ((m.textContent || '').split(' — ')[1] || 'Petugas') : 'Belum ditentukan';
-            chip.innerHTML = name + ' <small class="opacity-75">(' + prof + ')</small> <button type="button" class="btn-close btn-close-white ms-1 remove-team"></button>' + (m ? '<input type="hidden" name="surgical_team_ids[]" value="' + m.dataset.id + '">' : '') + '<input type="hidden" name="surgical_team_names[]" value="' + name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') + '">';
+            const hiddenInput = m
+                ? '<input type="hidden" name="surgical_team_ids[]" value="' + m.dataset.id + '">'
+                : '<input type="hidden" name="surgical_team_names[]" value="' + (m ? m.value : name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') + '">';
+            chip.innerHTML = (m ? m.value : name) + ' <small class="opacity-75">(' + prof + ')</small> <button type="button" class="btn-close btn-close-white ms-1 remove-team"></button>' + hiddenInput;
             chips.appendChild(chip);
+        }
+
+        function addTeam() {
+            const val = (teamInput.value || '').trim();
+            if (!val) return;
+            const parts = val.split(/[,;\/\n\r]+|\s+\.\s*|\b\s*\.\s*(?=[a-zA-Z])/).map(s => s.trim()).filter(s => s.length > 0);
+            if (parts.length > 0) {
+                parts.forEach(p => addSingleTeam(p));
+            } else {
+                addSingleTeam(val);
+            }
             teamInput.value = '';
             teamInput.focus();
         }
-        document.getElementById('add_team').addEventListener('click', addTeam);
+        document.getElementById('add_team')?.addEventListener('click', addTeam);
         teamInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addTeam();
             }
+        });
+        teamInput.addEventListener('change', () => {
+            if (teamInput.value.trim()) addTeam();
+        });
+        teamInput.addEventListener('blur', () => {
+            if (teamInput.value.trim()) addTeam();
         });
         chips.addEventListener('click', e => {
             if (e.target.classList.contains('remove-team')) {
@@ -173,6 +193,9 @@ $selectedTeams = old('surgical_team_ids', $schedule->exists ? $schedule->surgica
             }
         });
         document.getElementById('scheduleForm')?.addEventListener('submit', e => {
+            if (teamInput.value.trim()) {
+                addTeam();
+            }
             if (!patientInput.value.trim()) {
                 e.preventDefault();
                 patientInput.focus();

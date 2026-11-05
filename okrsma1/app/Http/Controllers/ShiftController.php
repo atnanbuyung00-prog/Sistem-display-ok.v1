@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Shift, ShiftAssignment, SurgicalTeam};
+use App\Models\{Shift, ShiftAssignment, SurgicalTeam, ActivityLog};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -69,7 +69,12 @@ class ShiftController
         $d['active'] = $r->has('active') ? $r->boolean('active') : true;
         $d['color'] = $d['color'] ?: '#1b7a5a';
 
-        Shift::create($d);
+        $newShift = Shift::create($d);
+        ActivityLog::record('INPUT', 'Shift', "Tambah shift baru: {$newShift->name} ({$newShift->start_time} - {$newShift->end_time})", [
+            'record_id'  => $newShift->id,
+            'new_values' => $newShift->toArray(),
+        ]);
+
         return redirect()->route('admin.shifts.manage')->with('success', 'Shift baru berhasil ditambahkan.');
     }
 
@@ -87,18 +92,32 @@ class ShiftController
         $d['active'] = $r->has('active') ? $r->boolean('active') : true;
         $d['color'] = $d['color'] ?: '#1b7a5a';
 
+        $old = $shift->toArray();
         $shift->update($d);
+
+        ActivityLog::record('UBAH', 'Shift', "Ubah data shift: {$shift->name} ({$shift->start_time} - {$shift->end_time})", [
+            'record_id'  => $shift->id,
+            'old_values' => $old,
+            'new_values' => $shift->toArray(),
+        ]);
+
         return redirect()->route('admin.shifts.manage')->with('success', 'Data shift berhasil diperbarui.');
     }
 
     public function destroy(Shift $shift)
     {
+        $snapshot = $shift->toArray();
         DB::transaction(function () use ($shift) {
             // Hapus semua penugasan staf yang terikat pada shift ini terlebih dahulu
             $shift->assignments()->delete();
             // Hapus shift-nya
             $shift->delete();
         });
+
+        ActivityLog::record('HAPUS', 'Shift', "Hapus shift: {$shift->name}", [
+            'record_id'  => $shift->id,
+            'old_values' => $snapshot,
+        ]);
 
         return back()->with('success', 'Shift berhasil dihapus.');
     }
@@ -245,6 +264,10 @@ class ShiftController
 
     public function destroyAssignment(Shift $shift, ShiftAssignment $assignment)
     {
+        ActivityLog::record('HAPUS', 'Shift', "Hapus petugas {$assignment->staff_name} ({$assignment->staff_role}) dari shift {$shift->name} tanggal " . (\Carbon\Carbon::parse($assignment->shift_date)->format('d/m/Y')), [
+            'old_values' => $assignment->toArray(),
+        ]);
+
         $assignment->delete();
         return back()->with('success', 'Petugas dihapus.');
     }

@@ -11,8 +11,8 @@ return [
     'lottery' => [2, 100],
     'cookie' => env('SESSION_COOKIE', 'laravel-session'),
     'path' => '/',
-    'domain' => env('SESSION_DOMAIN'),
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'domain' => env('SESSION_DOMAIN') ?: null,
+    'secure' => env('SESSION_SECURE_COOKIE', false),
     'http_only' => true,
     'same_site' => 'lax',
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false)

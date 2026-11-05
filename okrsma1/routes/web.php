@@ -10,6 +10,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\DisplayController;
 use App\Http\Controllers\GreetingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\BackupController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -76,5 +78,18 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+
+    Route::middleware('permission:audit.view')->group(function () {
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity_logs.index');
+        Route::get('/activity-logs/{activity_log}', [ActivityLogController::class, 'show'])->name('activity_logs.show');
+    });
+
+    Route::middleware('permission:backup.manage')->group(function () {
+        Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups', [BackupController::class, 'store'])->name('backups.store');
+        Route::get('/backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
+        Route::post('/backups/restore', [BackupController::class, 'restore'])->name('backups.restore');
+        Route::delete('/backups/{filename}', [BackupController::class, 'destroy'])->name('backups.destroy');
     });
 });

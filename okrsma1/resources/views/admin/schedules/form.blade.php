@@ -95,7 +95,6 @@
                         {{ $x->name }} <small class="opacity-75">({{ $x->profession?->name ?? $x->role ?? 'Perawat' }})</small>
                         <button type="button" class="btn-close btn-close-white ms-1 remove-team" aria-label="Hapus"></button>
                         <input type="hidden" name="surgical_team_ids[]" value="{{ $x->id }}">
-                        <input type="hidden" name="surgical_team_names[]" value="{{ $x->name }}">
                     </span>
                     @endforeach
                     @if(empty($selectedTeams))<span id="team_empty" class="text-muted small">Belum ada anggota dipilih.</span>@endif
@@ -161,6 +160,8 @@
 <script>
     (function() {
         const normalize = s => (s || '').trim().toLowerCase();
+        const cleanStr = s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
         const patientName = document.getElementById('patient_name');
         const patientRM = document.getElementById('patient_medical_record_no');
         const patientGender = document.getElementById('patient_gender');
@@ -169,19 +170,20 @@
 
         function findPatient() {
             const val = normalize(patientName.value);
+            const valClean = cleanStr(patientName.value);
             let match = null;
             document.querySelectorAll('#patient_list option').forEach(o => {
-                if (normalize(o.value) === val) match = o;
+                if (normalize(o.value) === val || cleanStr(o.value) === valClean) match = o;
             });
             if (match) {
                 patientId.value = match.dataset.id || '';
-                if (!patientRM.value) patientRM.value = match.dataset.rm || '';
-                if (!patientGender.value) patientGender.value = match.dataset.gender || '';
-                patientHint.textContent = 'Pasien ditemukan. Data tetap akan disimpan saat jadwal disimpan.';
+                if (!patientRM.value && match.dataset.rm) patientRM.value = match.dataset.rm;
+                if (!patientGender.value && match.dataset.gender) patientGender.value = match.dataset.gender;
+                patientHint.textContent = 'Pasien terdaftar ditemukan (ID: ' + (match.dataset.id || '-') + '). Data tidak akan diduplikasi.';
                 patientHint.className = 'small-muted mt-1 text-success';
             } else {
                 patientId.value = '';
-                patientHint.textContent = 'Pasien baru? Isi No. RM dan Jenis Kelamin. Tidak perlu menambah data pasien terlebih dahulu.';
+                patientHint.textContent = 'Pasien baru? Cukup isi No. RM dan Jenis Kelamin lalu Simpan.';
                 patientHint.className = 'small-muted mt-1';
             }
         }
@@ -198,9 +200,10 @@
 
             function find() {
                 const val = normalize(input.value);
+                const valClean = cleanStr(input.value);
                 let match = null;
                 list.querySelectorAll('option').forEach(o => {
-                    if (normalize(o.value) === val) match = o;
+                    if (normalize(o.value) === val || cleanStr(o.value) === valClean) match = o;
                 });
                 hidden.value = match ? match.dataset.id : '';
                 if (match) {
@@ -223,30 +226,62 @@
             teamList = document.getElementById('team_list'),
             chips = document.getElementById('team_chips');
 
-        function addTeamFromInput() {
-            const name = (teamInput.value || '').trim();
+        function addSingleTeam(rawName) {
+            const name = (rawName || '').trim();
             if (!name) return;
-            // Allow selecting an existing team OR typing a completely new name.
+
+            const nameClean = cleanStr(name);
+            const exists = [...chips.querySelectorAll('.team-chip')].some(x => {
+                return normalize(x.dataset.name) === normalize(name) || (x.dataset.clean && x.dataset.clean === nameClean);
+            });
+            if (exists) return;
+
             let match = null;
             teamList.querySelectorAll('option').forEach(o => {
-                if (normalize(o.value) === normalize(name)) match = o;
+                if (normalize(o.value) === normalize(name) || cleanStr(o.value) === nameClean) {
+                    match = o;
+                }
             });
-            const exists = [...chips.querySelectorAll('.team-chip')].some(x => normalize(x.dataset.name) === normalize(name));
-            if (exists) {
-                teamInput.value = '';
-                return;
-            }
+
             document.getElementById('team_empty')?.remove();
             const chip = document.createElement('span');
             chip.className = 'badge rounded-pill text-bg-primary me-1 mb-1 team-chip';
             chip.dataset.id = match ? match.dataset.id : '';
-            chip.dataset.name = name;
+            chip.dataset.name = match ? match.value : name;
+            chip.dataset.clean = nameClean;
+
+            const displayName = match ? match.value : name;
             const prof = match ? ((match.textContent || '').split(' — ')[1] || 'Petugas') : 'Anggota baru';
-            chip.innerHTML = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + ' <small class="opacity-75">(' + prof.replace(/</g, '&lt;') + ')</small> <button type="button" class="btn-close btn-close-white ms-1 remove-team" aria-label="Hapus"></button>' + (match ? '<input type="hidden" name="surgical_team_ids[]" value="' + match.dataset.id + '">' : '') + '<input type="hidden" name="surgical_team_names[]" value="' + name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') + '">';
+
+            // Only send surgical_team_ids[] if matched; ONLY send surgical_team_names[] if truly new
+            const hiddenInput = match
+                ? '<input type="hidden" name="surgical_team_ids[]" value="' + match.dataset.id + '">'
+                : '<input type="hidden" name="surgical_team_names[]" value="' + displayName.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">';
+
+            chip.innerHTML = displayName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+                ' <small class="opacity-75">(' + prof.replace(/</g, '&lt;') + ')</small> ' +
+                '<button type="button" class="btn-close btn-close-white ms-1 remove-team" aria-label="Hapus"></button>' +
+                hiddenInput;
+
             chips.appendChild(chip);
+        }
+
+        function addTeamFromInput() {
+            const val = (teamInput.value || '').trim();
+            if (!val) return;
+
+            // Split multiple names if separated by comma, semicolon, slash, or dot between words
+            const parts = val.split(/[,;\/\n\r]+|\s+\.\s*|\b\s*\.\s*(?=[a-zA-Z])/).map(s => s.trim()).filter(s => s.length > 0);
+            if (parts.length > 0) {
+                parts.forEach(part => addSingleTeam(part));
+            } else {
+                addSingleTeam(val);
+            }
+
             teamInput.value = '';
             teamInput.focus();
         }
+
         teamInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -267,6 +302,9 @@
         });
 
         document.getElementById('scheduleForm').addEventListener('submit', e => {
+            if (teamInput.value.trim()) {
+                addTeamFromInput();
+            }
             if (!patientName.value.trim() || !patientGender.value) {
                 e.preventDefault();
                 alert('Nama Pasien dan Jenis Kelamin wajib diisi.');

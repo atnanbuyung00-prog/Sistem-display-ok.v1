@@ -2,23 +2,22 @@
 
 # Sistem Informasi Jadwal Operasi dan Display OK
 
-Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar operasi Rumah Sakit Mutiara Aini. Identitas dan tujuan ini berasal dari `composer.json` serta controller dan tampilan di folder [`okrsma1/`](okrsma1/).
+Aplikasi web untuk mengelola jadwal operasi dan menampilkan informasi kamar operasi Rumah Sakit Mutiara Aini. Kode aplikasi Laravel ada di folder [`okrsma1/`](okrsma1/).
 
-**[Galeri UI/UX](#galeri-uiux) · [Instalasi](#instalasi-lokal) · [Menjalankan](#menjalankan) · [Penggunaan](#penggunaan) · [Status](#status-saat-ini)**
+**[Pembaruan](#pembaruan-5-november-2026) · [Galeri UI/UX](#galeri-uiux) · [Instalasi](#instalasi-lokal) · [Upgrade](#upgrade-instalasi-yang-sudah-ada) · [Penggunaan](#penggunaan)**
 
-| Teknologi | Distribusi source | Verifikasi |
-| --- | --- | --- |
-| PHP `^8.2` · Laravel `^12.0` · Blade | `okrsma1/` (hasil ekstraksi) | Tinjauan statis; belum diuji berjalan |
+## Pembaruan 5 November 2026
 
-## Mulai dari sini
+Kode aplikasi disinkronkan dari unggahan ZIP 5 November 2026. Perubahan utama mencakup:
 
-- **Ingin mencoba aplikasi?** Ikuti [kebutuhan instalasi](#kebutuhan-instalasi) dan [instalasi lokal](#instalasi-lokal), lalu [jalankan server](#menjalankan).
-- **Ingin mengenal proyek?** Baca [fitur yang ada](#fitur-yang-ada-di-source) dan [struktur aplikasi](#struktur-aplikasi).
-- **Ingin melanjutkan pengembangan?** Periksa [pekerjaan yang belum selesai](#yang-masih-perlu-dilengkapi-dan-diverifikasi).
+- **Rekap Aktivitas IT** dengan pencatatan perubahan jadwal, data master, shift, pengguna, serta operasi backup. Detail log dapat menampilkan nilai sebelum dan sesudah perubahan.
+- **Backup dan restore MySQL** dari panel admin. Pengguna berwenang dapat membuat, mengunduh, memulihkan, dan menghapus cadangan SQL.
+- **Pelacakan pembuat dan pengubah jadwal operasi**, dengan migrasi untuk tabel log dan kolom pelacakan pada jadwal.
+- **Penyegaran antarmuka** pada dashboard, formulir jadwal, login, dan Display TV.
 
 ## Galeri UI/UX
 
-Pratinjau berikut disusun ulang berdasarkan struktur Blade dan palet warna pada source. **Ini ilustrasi dokumentasi, bukan screenshot aplikasi yang sedang berjalan.** Tata letak disederhanakan; seluruh nama, jadwal, dan angka menggunakan data simulasi. Gambar tidak menandakan fitur telah lolos pengujian.
+Galeri berisi ilustrasi antarmuka dengan data simulasi. Tampilan aktual dapat berbeda, terutama pada halaman yang diperbarui.
 
 ### Dashboard admin
 
@@ -53,9 +52,7 @@ Sumber tampilan: [display Blade](okrsma1/resources/views/display/index.blade.php
 
 ## Status saat ini
 
-Ditinjau pada 5 November 2026. Source aplikasi telah diekstrak ke **[`okrsma1/`](okrsma1/)** agar dapat dibaca langsung di GitHub. Arsip asli `okrsma1.zip` telah dihapus dari branch saat ini; `docs/` berisi aset dokumentasi. Folder source hasil ekstraksi tidak menyertakan `vendor/`, database `laravel_db`, sesi, cache hasil pemakaian, log, maupun foto profil unggahan lama. Data contoh pasien, staf, dan jadwal klinis di seeder tidak disalin; seeder hasil ekstraksi hanya membuat akun admin awal.
-
-Implementasi sudah memiliki route, controller, model, Blade view, migrasi, dan seeder. Peninjauan dilakukan secara statis; instalasi, migrasi database, dan alur aplikasi belum diuji berjalan. Keberadaan kode tidak berarti seluruh fitur sudah lolos pengujian atau siap produksi. Tidak ditemukan direktori pengujian aplikasi `tests/` di dalam arsip.
+Branch utama berisi kode aplikasi dan aset dokumentasi. Konfigurasi lokal, dependensi terpasang, cadangan database, log, sesi, cache, dan foto unggahan dikelola di masing-masing lingkungan. Template [`.env.example`](okrsma1/.env.example) menyediakan pengaturan awal dengan `APP_KEY` kosong. Seeder lokal hanya membuat akun admin awal.
 
 ## Fitur yang ada di source
 
@@ -68,7 +65,7 @@ Implementasi sudah memiliki route, controller, model, Blade view, migrasi, dan s
 - Display jadwal dan shift melalui `/display`, dengan pengambilan data setiap 3 detik dari `/display/events`.
 - Pengelolaan pengguna/permission, profil dan foto pengguna, serta pesan sapaan.
 
-**Batasan yang ditemukan:** route ekspor shift menunjuk metode `export`, sedangkan `ShiftController` hanya menyediakan `exportCsv`. Ekspor shift belum dapat dianggap berfungsi sebelum ketidaksesuaian ini diperbaiki dan diuji.
+Ekspor shift masih perlu diperbaiki. Route memanggil `export`, sedangkan `ShiftController` menyediakan `exportCsv`.
 
 ## Struktur aplikasi
 
@@ -78,6 +75,7 @@ Direktori [`okrsma1/`](okrsma1/) berisi:
 | --- | --- |
 | `app/Http/Controllers/` | Logika autentikasi, jadwal, shift, display, dan administrasi |
 | `app/Models/` | Model data aplikasi |
+| `app/Services/DatabaseBackupService.php` | Pembuatan dan pemulihan cadangan MySQL |
 | `routes/web.php` | Route halaman dan endpoint data |
 | `resources/views/` | Tampilan Blade admin, login, dan display |
 | `database/migrations/` | Definisi dan perubahan skema database |
@@ -87,66 +85,46 @@ Direktori [`okrsma1/`](okrsma1/) berisi:
 
 ## Kebutuhan instalasi
 
-- PHP yang memenuhi `^8.2` dan kebutuhan ekstensi pada dependensi Composer.
-- Composer; Laravel yang diminta source adalah `^12.0`.
-- Database: konfigurasi menyediakan SQLite dan MySQL. Contoh penyiapan di bawah menggunakan MySQL dan ekstensi PHP PDO MySQL. Versi MySQL yang telah diuji belum didokumentasikan.
-- Git dan alat ekstraksi ZIP.
+- PHP 8.2 atau lebih baru yang kompatibel dengan lockfile, Composer, Git, dan ekstensi PHP yang diminta dependensi.
+- MySQL dan ekstensi PHP PDO MySQL. Modul backup dan restore menggunakan perintah SQL khusus MySQL.
 - Hak tulis untuk `storage/`, `bootstrap/cache/`, serta `public/uploads/profiles/` jika menggunakan unggahan foto.
-- Browser dan akses internet untuk aset Bootstrap/Bootstrap Icons dari CDN pada layout admin.
+- Browser dan koneksi ke CDN yang dipakai antarmuka admin.
 
 ## Instalasi lokal
 
-Langkah berikut diturunkan dari source dan **belum diverifikasi melalui eksekusi**. Gunakan database lokal baru untuk percobaan.
-
-1. Ambil source yang sudah diekstrak:
+1. Ambil kode dan buat konfigurasi lokal.
 
    ```bash
    git clone https://github.com/atnanbuyung00-prog/Sistem-display-ok.v1.git
-   cd Sistem-display-ok.v1
-   cd okrsma1
+   cd Sistem-display-ok.v1/okrsma1
+   cp .env.example .env
    ```
 
-2. Buat database MySQL kosong dan akun database lokal. Buat sendiri file `.env` di direktori yang sama dengan `artisan`; arsip tidak menyediakan `.env.example`. Contoh minimum:
-
-   ```dotenv
-   APP_NAME="Jadwal Operasi OK"
-   APP_ENV=local
-   APP_KEY=
-   APP_DEBUG=true
-   APP_URL=http://127.0.0.1:8000
-
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_DATABASE=jadwal_ok_local
-   DB_USERNAME=ISI_USER_DATABASE_LOKAL
-   DB_PASSWORD=ISI_PASSWORD_DATABASE_LOKAL
-
-   SESSION_DRIVER=file
-   CACHE_STORE=file
-   QUEUE_CONNECTION=sync
-   ```
-
-   Sesuaikan nilai database dengan database dan akun yang dibuat. Jangan memasukkan `.env` ke Git.
-
-3. Pasang dependensi dari lockfile dan siapkan aplikasi:
+2. Buat database MySQL kosong dan akun lokal yang memiliki izin pada database tersebut. Atur `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` di `.env`, lalu jalankan:
 
    ```bash
    composer install
-   php artisan optimize:clear
    php artisan key:generate
    php artisan migrate
    ```
 
-   Folder hasil ekstraksi tidak membawa `vendor/` dan cache lama; dependensi dipasang melalui Composer. Gunakan database lokal baru. Berkas `laravel_db` yang ada di arsip asli tidak disalin ke folder source.
+3. Untuk percobaan lokal dengan database baru, jalankan `php artisan db:seed`. Seeder membuat akun `admin` dengan password awal `admin`. Ganti password sebelum memberikan akses kepada pihak lain.
 
-4. Opsional, hanya pada database percobaan baru:
+## Upgrade instalasi yang sudah ada
+
+1. Cadangkan database dan simpan salinan konfigurasi `.env` di tempat terbatas.
+2. Perbarui kode aplikasi. Gunakan kembali `.env` dan `APP_KEY` instalasi yang sudah ada untuk upgrade rutin.
+3. Dari direktori `okrsma1/`, jalankan:
 
    ```bash
-   php artisan db:seed
+   composer install --no-dev --optimize-autoloader
+   php artisan optimize:clear
+   php artisan migrate --force
    ```
 
-   Seeder hasil ekstraksi hanya membuat akun `admin` dengan password `admin`; data pasien/staf dan jadwal contoh telah dihilangkan. Segera ubah password melalui profil sebelum memberikan akses kepada pihak lain. Seeder hasil ekstraksi menggunakan `firstOrCreate`, sehingga akun admin yang sudah ada tidak ditimpa. Tetap tinjau seeder sebelum menjalankannya pada database berisi data.
+   Migrasi baru membuat tabel `activity_logs` dan menambahkan kolom pembuat serta pengubah pada `surgery_schedules`. Terapkan migrasi sebelum membuka akses ke versi baru.
+
+4. Periksa login, jadwal, Display TV, Rekap Aktivitas IT, dan daftar backup di lingkungan uji.
 
 ## Menjalankan
 
@@ -164,8 +142,10 @@ Buka:
 | `http://127.0.0.1:8000/admin` | Dashboard sesuai permission |
 | `http://127.0.0.1:8000/display` | Layar jadwal dan shift |
 | `http://127.0.0.1:8000/display?date=2026-11-05` | Contoh display untuk tanggal tertentu |
+| `http://127.0.0.1:8000/admin/activity-logs` | Rekap Aktivitas IT |
+| `http://127.0.0.1:8000/admin/backups` | Backup dan restore database |
 
-Server bawaan ini untuk pengembangan lokal. Konfigurasi deployment produksi belum tersedia sebagai panduan teruji; document root server web harus diarahkan ke `public/`.
+Server bawaan ini untuk pengembangan lokal. Pada web server, arahkan document root ke `public/`.
 
 ## Penggunaan
 
@@ -176,13 +156,12 @@ Server bawaan ini untuk pengembangan lokal. Konfigurasi deployment produksi belu
 5. Buka `/display` pada browser layar informasi; tanggal bawaan menggunakan Asia/Jakarta. Tinjau perubahan setelah data disimpan.
 6. Gunakan halaman jadwal untuk cetak atau ekspor operasi. Ekspor shift masih memiliki batasan yang disebutkan di atas.
 
-## Yang masih perlu dilengkapi dan diverifikasi
+## Akses log aktivitas dan cadangan
 
-- Source telah diekstrak ke Git. Tambahkan `.env.example` yang aman.
-- Pastikan versi PHP, ekstensi, database, dan prosedur instalasi melalui uji pada lingkungan bersih.
-- Perbaiki dan uji route ekspor shift. Kode penugasan RR juga menjalankan perubahan kolom khusus MySQL dengan pengecualian yang diabaikan; kompatibilitas SQLite dan hak perubahan skema perlu diuji.
-- Tambahkan pengujian autentikasi/permission, CRUD jadwal, shift, display, cetak, dan ekspor.
-- Arsip memuat sesi, cache tampilan, foto unggahan, dan berkas database. Tinjau dan bersihkan artefak tersebut sebelum distribusi source berikutnya.
-- Route `/display` dan `/display/events` tidak memakai middleware login; endpoint mengembalikan jadwal beserta relasi pasien. Pembatasan akses dan data yang layak ditampilkan harus ditetapkan sebelum menggunakan data pasien nyata.
-- Dokumentasikan deployment, backup/restore, lisensi, pengelola proyek, serta status rilis. Hal-hal ini belum dapat ditetapkan dari isi yang ditinjau.
-- Hubungan dengan repositori [Sistem-jadwal-OK](https://github.com/atnanbuyung00-prog/Sistem-jadwal-OK) belum dijelaskan. Jangan menganggap source kedua repositori sama.
+- Halaman log memerlukan `audit.view` dan halaman backup memerlukan `backup.manage`. Pada versi ini, `user.manage` juga memberikan kedua akses tersebut.
+- Cadangan disimpan di `storage/app/backups/`. Batasi akses ke cadangan dan detail log karena keduanya dapat berisi data pasien. Gunakan hanya file SQL dari sumber tepercaya. Uji restore pada database terpisah karena proses ini dapat menimpa tabel aktif.
+- Route `/display` dan `/display/events` dapat diakses tanpa login. Batasi aksesnya ke jaringan yang berwenang sebelum menampilkan data pasien.
+
+## Verifikasi
+
+Impor kode, pemeriksaan konfigurasi contoh, dan pemeriksaan perubahan Git telah dilakukan. Jalankan pengujian migrasi, alur aplikasi, dan restore pada lingkungan uji sebelum memakai versi ini di produksi.

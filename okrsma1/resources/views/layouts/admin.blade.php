@@ -374,16 +374,38 @@
                         </div>
                         @endif
 
-                        @if(auth()->user()->canAccess('user.manage'))
-                        <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-shield-lock me-2"></i>User & Akses</a>
-                        <a href="{{ route('admin.greetings.index') }}" class="{{ request()->routeIs('admin.greetings.*') ? 'active' : '' }}"><i class="bi bi-chat-square-heart me-2"></i>Pengaturan Salam</a>
+                        @if(auth()->user()->canAccess('user.manage') || auth()->user()->canAccess('audit.view') || auth()->user()->canAccess('backup.manage'))
+                        @php($userSysActive = request()->is('admin/users*') || request()->is('admin/activity-logs*') || request()->is('admin/backups*') || request()->is('admin/greetings*'))
+                        <div class="sidebar-dropdown">
+                            <a class="sidebar-menu-parent {{ $userSysActive ? 'parent-active' : '' }}" data-bs-toggle="collapse" href="#menuUserSystem" role="button" aria-expanded="{{ $userSysActive ? 'true' : 'false' }}">
+                                <span><i class="bi bi-shield-lock me-2"></i>User & IT Sistem</span>
+                                <i class="bi bi-chevron-down submenu-caret"></i>
+                            </a>
+                            <div class="collapse {{ $userSysActive ? 'show' : '' }}" id="menuUserSystem">
+                                <div class="submenu-container">
+                                    @if(auth()->user()->canAccess('user.manage'))
+                                    <a class="nav-sub {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}"><i class="bi bi-people me-2"></i>User & Akses</a>
+                                    @endif
+                                    <a class="nav-sub" href="{{ route('admin.display') }}" target="_blank"><i class="bi bi-tv me-2"></i>Display TV</a>
+                                    @if(auth()->user()->canAccess('audit.view'))
+                                    <a class="nav-sub {{ request()->routeIs('admin.activity_logs.*') ? 'active' : '' }}" href="{{ route('admin.activity_logs.index') }}"><i class="bi bi-shield-check me-2"></i>Rekap Aktivitas IT</a>
+                                    @endif
+                                    @if(auth()->user()->canAccess('backup.manage'))
+                                    <a class="nav-sub {{ request()->routeIs('admin.backups.*') ? 'active' : '' }}" href="{{ route('admin.backups.index') }}"><i class="bi bi-database-check me-2"></i>Backup & Restore</a>
+                                    @endif
+                                    @if(auth()->user()->canAccess('user.manage'))
+                                    <a class="nav-sub {{ request()->routeIs('admin.greetings.*') ? 'active' : '' }}" href="{{ route('admin.greetings.index') }}"><i class="bi bi-chat-square-heart me-2"></i>Pengaturan Salam</a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        @else
+                            @if(auth()->user()->canAccess('display.view'))
+                            <a href="{{ route('admin.display') }}" target="_blank"><i class="bi bi-tv me-2"></i>Display TV</a>
+                            @endif
                         @endif
 
                         <a href="{{ route('admin.profile.edit') }}" class="{{ request()->routeIs('admin.profile.*') ? 'active' : '' }}"><i class="bi bi-person-gear me-2"></i>Profil Saya</a>
-
-                        @if(auth()->user()->canAccess('display.view'))
-                        <a href="{{ route('admin.display') }}" target="_blank"><i class="bi bi-tv me-2"></i>Display TV</a>
-                        @endif
                     </nav>
                 </div>
                 <div class="mt-3 small" style="color:#d1fae5;opacity:.85">Login: <b>{{ auth()->user()->username }}</b><br>Laravel 12</div>
@@ -445,16 +467,36 @@
                         </div>
                         @endif
 
-                        @if(auth()->user()->canAccess('user.manage'))
-                        <a class="btn btn-outline-success text-start {{ request()->routeIs('admin.users.*') ? 'active text-white' : '' }}" href="{{ route('admin.users.index') }}"><i class="bi bi-shield-lock me-2"></i>User & Akses</a>
-                        <a class="btn btn-outline-success text-start {{ request()->routeIs('admin.greetings.*') ? 'active text-white' : '' }}" href="{{ route('admin.greetings.index') }}"><i class="bi bi-chat-square-heart me-2"></i>Pengaturan Salam</a>
+                        @if(auth()->user()->canAccess('user.manage') || auth()->user()->canAccess('audit.view') || auth()->user()->canAccess('backup.manage'))
+                        @php($mUserActive = request()->is('admin/users*') || request()->is('admin/activity-logs*') || request()->is('admin/backups*') || request()->is('admin/greetings*'))
+                        <div>
+                            <button class="btn btn-outline-success text-start w-100 d-flex justify-content-between align-items-center {{ $mUserActive ? 'active text-white' : '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenuUserSystem" aria-expanded="{{ $mUserActive ? 'true' : 'false' }}">
+                                <span><i class="bi bi-shield-lock me-2"></i>User & IT Sistem</span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </button>
+                            <div class="collapse {{ $mUserActive ? 'show' : '' }} ps-3 mt-1 d-grid gap-1" id="mobileMenuUserSystem">
+                                @if(auth()->user()->canAccess('user.manage'))
+                                <a class="btn btn-sm btn-outline-secondary text-start {{ request()->routeIs('admin.users.*') ? 'active text-white' : '' }}" href="{{ route('admin.users.index') }}"><i class="bi bi-people me-2"></i>User & Akses</a>
+                                @endif
+                                <a class="btn btn-sm btn-outline-secondary text-start" target="_blank" href="{{ route('admin.display') }}"><i class="bi bi-tv me-2"></i>Display TV</a>
+                                @if(auth()->user()->canAccess('audit.view'))
+                                <a class="btn btn-sm btn-outline-secondary text-start {{ request()->routeIs('admin.activity_logs.*') ? 'active text-white' : '' }}" href="{{ route('admin.activity_logs.index') }}"><i class="bi bi-shield-check me-2"></i>Rekap Aktivitas IT</a>
+                                @endif
+                                @if(auth()->user()->canAccess('backup.manage'))
+                                <a class="btn btn-sm btn-outline-secondary text-start {{ request()->routeIs('admin.backups.*') ? 'active text-white' : '' }}" href="{{ route('admin.backups.index') }}"><i class="bi bi-database-check me-2"></i>Backup & Restore</a>
+                                @endif
+                                @if(auth()->user()->canAccess('user.manage'))
+                                <a class="btn btn-sm btn-outline-secondary text-start {{ request()->routeIs('admin.greetings.*') ? 'active text-white' : '' }}" href="{{ route('admin.greetings.index') }}"><i class="bi bi-chat-square-heart me-2"></i>Pengaturan Salam</a>
+                                @endif
+                            </div>
+                        </div>
+                        @else
+                            @if(auth()->user()->canAccess('display.view'))
+                            <a class="btn btn-outline-dark text-start" target="_blank" href="{{ route('admin.display') }}"><i class="bi bi-tv me-2"></i>Display TV</a>
+                            @endif
                         @endif
 
                         <a class="btn btn-outline-success text-start {{ request()->routeIs('admin.profile.*') ? 'active text-white' : '' }}" href="{{ route('admin.profile.edit') }}"><i class="bi bi-person-gear me-2"></i>Profil Saya</a>
-
-                        @if(auth()->user()->canAccess('display.view'))
-                        <a class="btn btn-outline-dark text-start" target="_blank" href="{{ route('admin.display') }}"><i class="bi bi-tv me-2"></i>Display TV</a>
-                        @endif
                     </nav>
                 </div>
             </div>
@@ -465,7 +507,8 @@
                             <h5 class="mb-0">@yield('title','Dashboard')</h5><small class="text-muted">Sistem Jadwal Operasi</small>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2"><a href="{{ route('admin.profile.edit') }}" class="d-flex align-items-center gap-2 text-decoration-none text-dark rounded-pill border px-2 py-1 bg-white" title="Buka Profil Saya" style="max-width:240px"><span class="rounded-circle border d-inline-flex align-items-center justify-content-center overflow-hidden bg-light flex-shrink-0" style="width:36px;height:36px">@if(auth()->user()->profile_photo && file_exists(public_path(auth()->user()->profile_photo)))<img src="{{ asset(auth()->user()->profile_photo) }}?v={{ @filemtime(public_path(auth()->user()->profile_photo)) }}" alt="Foto profil" style="width:100%;height:100%;object-fit:cover">@else<i class="bi bi-person-fill fs-5 text-secondary"></i>@endif</span><span class="d-none d-sm-block text-truncate" style="max-width:145px"><strong class="d-block small text-truncate">{{ auth()->user()->name }}</strong><small class="text-muted">{{ '@' . auth()->user()->username }}</small></span><i class="bi bi-chevron-down small text-secondary"></i></a>
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ route('admin.profile.edit') }}" class="d-flex align-items-center gap-2 text-decoration-none text-dark rounded-pill border px-2 py-1 bg-white" title="Buka Profil Saya" style="max-width:240px"><span class="rounded-circle border d-inline-flex align-items-center justify-content-center overflow-hidden bg-light flex-shrink-0" style="width:36px;height:36px">@if(auth()->user()->profile_photo && file_exists(public_path(auth()->user()->profile_photo)))<img src="{{ asset(auth()->user()->profile_photo) }}?v={{ @filemtime(public_path(auth()->user()->profile_photo)) }}" alt="Foto profil" style="width:100%;height:100%;object-fit:cover">@else<i class="bi bi-person-fill fs-5 text-secondary"></i>@endif</span><span class="d-none d-sm-block text-truncate" style="max-width:145px"><strong class="d-block small text-truncate">{{ auth()->user()->name }}</strong><small class="text-muted">{{ '@' . auth()->user()->username }}</small></span><i class="bi bi-chevron-down small text-secondary"></i></a>
                         <form method="POST" action="{{ route('logout') }}">@csrf<button class="btn btn-outline-secondary btn-sm" title="Keluar"><i class="bi bi-box-arrow-right"></i><span class="d-none d-md-inline"> Keluar</span></button></form>
                     </div>
                 </header>

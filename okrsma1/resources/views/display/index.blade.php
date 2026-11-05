@@ -98,7 +98,7 @@
       font-size: .75vw;
     }
 
-    /* Tabel utama: Dibuat pas untuk 9 baris tanpa menabrak footer */
+    /* Tabel utama: Dibuat pas untuk 10 baris tanpa menabrak footer */
     .table-wrap {
       height: 77.5vh;
       flex: 0 0 77.5vh;
@@ -115,19 +115,19 @@
     }
 
     .grid thead {
-      height: 5vh;
+      height: 4.5vh;
     }
 
     .grid tbody tr {
-      height: 8.05vh;
+      height: 7.3vh;
     }
 
     .grid th {
       background: #13795b;
       color: #fff;
-      font-size: 0.9vw;
+      font-size: 0.88vw;
       font-weight: 800;
-      padding: .2vh .2vw;
+      padding: .15vh .2vw;
       border-right: 2px solid #8cbca8;
       line-height: 1.05;
       text-transform: uppercase;
@@ -137,10 +137,10 @@
     }
 
     .grid td {
-      font-size: 0.82vw;
+      font-size: 0.80vw;
       font-weight: 700;
       text-align: center;
-      padding: .15vh .2vw;
+      padding: .12vh .2vw;
       border-right: 2px solid #a3d0be;
       border-bottom: 1px solid #fff;
       line-height: 1.02;
@@ -175,37 +175,37 @@
     .grid td:nth-child(9) {
       white-space: normal;
       word-break: break-word;
-      line-height: 1.15;
+      line-height: 1.12;
     }
 
     .grid td:nth-child(5) {
-      padding: .2vh .4vw;
-      font-size: 0.82vw;
+      padding: .12vh .4vw;
+      font-size: 0.80vw;
     }
 
     .grid td:nth-child(7) {
-      padding: .2vh .4vw;
-      font-size: 0.82vw;
-      line-height: 1.18;
+      padding: .12vh .4vw;
+      font-size: 0.80vw;
+      line-height: 1.14;
     }
 
     .grid td:nth-child(9) {
-      padding: .2vh .3vw;
-      font-size: 0.78vw;
+      padding: .12vh .3vw;
+      font-size: 0.75vw;
     }
 
     .name {
       text-align: left !important;
       padding-left: .6vw !important;
-      font-size: 0.86vw !important;
+      font-size: 0.84vw !important;
     }
 
     .ok {
       display: inline-block;
       border-radius: 4px;
       color: #fff;
-      padding: .15vh .2vw;
-      font-size: .75vw;
+      padding: .12vh .2vw;
+      font-size: .72vw;
       font-weight: 800;
       min-width: 2.5vw;
     }
@@ -231,9 +231,9 @@
       background: #ef1010;
       color: #fff;
       border-radius: 5px;
-      padding: .15vh .3vw;
+      padding: .12vh .3vw;
       display: inline-block;
-      font-size: .70vw;
+      font-size: .68vw;
       font-weight: 900;
     }
 
@@ -247,7 +247,7 @@
     }
 
     .empty-row td {
-      height: 8.05vh;
+      height: 7.3vh;
     }
 
     /* FOOTER / SHIFT: 14.5vh */
@@ -707,7 +707,7 @@
           if (ra !== rb) return ra - rb;
           return String(a.operation_time).localeCompare(String(b.operation_time));
         })
-        .slice(0, 9); // Tepat 9 baris pasien
+        .slice(0, 10); // Tepat 10 baris pasien
     }
 
     function render(data, force = true) {
@@ -770,7 +770,7 @@
           <td></td>
         </tr>
       `;
-      for (let i = visible.length; i < 9; i++) {
+      for (let i = visible.length; i < 10; i++) {
         rows.insertAdjacentHTML('beforeend', emptyRowHtml);
       }
 

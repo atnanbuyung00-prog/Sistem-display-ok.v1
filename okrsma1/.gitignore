@@ -3,6 +3,7 @@
 /public/build
 /public/hot
 /storage/*.key
+/storage/app/backups/
 .env
 .phpunit.result.cache
 .DS_Store

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\{Operator, Anesthesia, SurgicalTeam, Patient, Profession};
+use App\Models\{Operator, Anesthesia, SurgicalTeam, Patient, Profession, ActivityLog};
 
 class MasterDataController
 {
@@ -29,24 +29,46 @@ class MasterDataController
     public function store(Request $r, string $type)
     {
         abort_unless(isset($this->map[$type]), 404);
-        [$class] = $this->map[$type];
+        [$class, $label] = $this->map[$type];
         $data = $this->validateType($r, $type);
-        $class::create($data);
+        $item = $class::create($data);
+
+        ActivityLog::record('INPUT', 'Data Master', "Tambah data master {$label}: " . ($item->name ?? '#' . $item->id), [
+            'record_id'  => $item->id,
+            'new_values' => $item->toArray(),
+        ]);
+
         return back()->with('success', 'Data berhasil ditambahkan.');
     }
     public function update(Request $r, string $type, $item)
     {
         abort_unless(isset($this->map[$type]), 404);
-        [$class] = $this->map[$type];
+        [$class, $label] = $this->map[$type];
         $model = $class::findOrFail($item);
+        $old = $model->toArray();
         $model->update($this->validateType($r, $type));
+
+        ActivityLog::record('UBAH', 'Data Master', "Ubah data master {$label}: " . ($model->name ?? '#' . $model->id), [
+            'record_id'  => $model->id,
+            'old_values' => $old,
+            'new_values' => $model->toArray(),
+        ]);
+
         return back()->with('success', 'Data berhasil diperbarui.');
     }
     public function destroy(string $type, $item)
     {
         abort_unless(isset($this->map[$type]), 404);
-        [$class] = $this->map[$type];
-        $class::findOrFail($item)->delete();
+        [$class, $label] = $this->map[$type];
+        $model = $class::findOrFail($item);
+        $snapshot = $model->toArray();
+
+        ActivityLog::record('HAPUS', 'Data Master', "Hapus data master {$label}: " . ($model->name ?? '#' . $model->id), [
+            'record_id'  => $model->id,
+            'old_values' => $snapshot,
+        ]);
+
+        $model->delete();
         return back()->with('success', 'Data berhasil dihapus.');
     }
     private function validateType(Request $r, string $type): array

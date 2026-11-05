@@ -118,6 +118,7 @@
     <div class="opacity-75">{{ $schedules->count() }} jadwal operasi pada tanggal ini</div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
+    @if(auth()->user()->canAccess('audit.view'))<a class="btn btn-light" href="{{ route('admin.activity_logs.index') }}" title="Lihat Rekap Siapa yang Input & Hapus"><i class="bi bi-shield-check me-1"></i> Rekap IT</a>@endif
     @if(auth()->user()->canAccess('schedule.export'))<a class="btn btn-light" href="{{ route('admin.schedules.export',['date'=>$date]) }}"><i class="bi bi-file-earmark-excel me-1"></i> Excel</a>@endif
     @if(auth()->user()->canAccess('schedule.manage'))<a class="btn btn-warning" href="{{ route('admin.schedules.create',['date'=>$date]) }}"><i class="bi bi-plus-lg me-1"></i> Jadwal Baru</a>@endif
   </div>
@@ -164,7 +165,14 @@
           <td class="fw-bold">{{ $i+1 }}</td>
           <td class="fw-bold">{{ substr($s->operation_time,0,5) }}</td>
           <td><span class="ok-badge {{ $s->ok_level==='OK 3'?'ok3-badge':($s->ok_level==='OK 2'?'ok2-badge':'ok1-badge') }}">{{ $s->ok_level }}</span></td>
-          <td class="fw-semibold">{{ $s->patient?->name }}</td>
+          <td class="fw-semibold">
+            {{ $s->patient?->name }}
+            @if($s->creator)
+            <small class="d-block text-muted" style="font-size: 0.75rem;" title="Diinput oleh {{ $s->creator->name }} (@{{ $s->creator->username }})">
+              <i class="bi bi-person-fill"></i> Diinput: {{ $s->creator->name }}
+            </small>
+            @endif
+          </td>
           <td>{{ $s->patient?->gender }}</td>
           <td>{{ $s->diagnosis ?: '-' }}</td>
           <td>{{ $s->procedure }}</td>

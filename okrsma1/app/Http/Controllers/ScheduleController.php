@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{SurgerySchedule, Patient, Operator, Anesthesia, SurgicalTeam};
+use App\Models\{SurgerySchedule, Patient, Operator, Anesthesia, SurgicalTeam, ActivityLog};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -30,10 +30,25 @@ class ScheduleController extends Controller
         return DB::transaction(function () use ($r, $data) {
             $patient = $this->resolvePatient($r, null);
             $data['patient_id'] = $patient->id;
+            $data['created_by_user_id'] = auth()->id();
+            $data['updated_by_user_id'] = auth()->id();
             $teamIds = $this->resolveTeamIds($data['surgical_team_ids'] ?? [], $data['surgical_team_names'] ?? []);
             unset($data['surgical_team_ids'], $data['surgical_team_names'], $data['patient_name'], $data['patient_medical_record_no'], $data['patient_gender']);
             $schedule = SurgerySchedule::create($data);
             $schedule->surgicalTeams()->sync($teamIds);
+
+            // Audit Log: Record who inputted this schedule
+            ActivityLog::record('INPUT', 'Jadwal Operasi', "Input jadwal operasi baru: {$patient->name} ({$schedule->ok_level}, Jam " . substr((string)$schedule->operation_time, 0, 5) . ", Tindakan: {$schedule->procedure})", [
+                'record_id'      => $schedule->id,
+                'patient_name'   => $patient->name,
+                'operation_date' => $schedule->operation_date,
+                'new_values'     => [
+                    'schedule' => $schedule->toArray(),
+                    'patient'  => $patient->toArray(),
+                    'teams'    => $schedule->surgicalTeams->pluck('name')->all(),
+                ],
+            ]);
+
             return redirect()->route('admin.schedules.create', ['date' => $schedule->operation_date->toDateString()])
                 ->with('success', 'Jadwal operasi berhasil disimpan. Silakan lanjut input jadwal berikutnya.');
         });
@@ -49,12 +64,33 @@ class ScheduleController extends Controller
     {
         $data = $this->validateData($r);
         return DB::transaction(function () use ($r, $data, $schedule) {
+            $oldValues = [
+                'schedule' => $schedule->toArray(),
+                'patient'  => $schedule->patient?->toArray(),
+                'teams'    => $schedule->surgicalTeams->pluck('name')->all(),
+            ];
+
             $patient = $this->resolvePatient($r, $schedule->patient_id);
             $data['patient_id'] = $patient->id;
+            $data['updated_by_user_id'] = auth()->id();
             $teamIds = $this->resolveTeamIds($data['surgical_team_ids'] ?? [], $data['surgical_team_names'] ?? []);
             unset($data['surgical_team_ids'], $data['surgical_team_names'], $data['patient_name'], $data['patient_medical_record_no'], $data['patient_gender']);
             $schedule->update($data);
             $schedule->surgicalTeams()->sync($teamIds);
+
+            // Audit Log: Record who updated this schedule
+            ActivityLog::record('UBAH', 'Jadwal Operasi', "Ubah jadwal operasi: {$patient->name} ({$schedule->ok_level}, Jam " . substr((string)$schedule->operation_time, 0, 5) . ", Tindakan: {$schedule->procedure})", [
+                'record_id'      => $schedule->id,
+                'patient_name'   => $patient->name,
+                'operation_date' => $schedule->operation_date,
+                'old_values'     => $oldValues,
+                'new_values'     => [
+                    'schedule' => $schedule->toArray(),
+                    'patient'  => $patient->toArray(),
+                    'teams'    => $schedule->surgicalTeams->pluck('name')->all(),
+                ],
+            ]);
+
             return redirect()->route('admin.schedules.manage', ['date' => $schedule->operation_date->toDateString()])
                 ->with('success', 'Jadwal operasi diperbarui.');
         });
@@ -63,6 +99,39 @@ class ScheduleController extends Controller
     public function destroy(SurgerySchedule $schedule)
     {
         $date = $schedule->operation_date->toDateString();
+        $patientName = $schedule->patient?->name ?? 'Pasien #' . $schedule->patient_id;
+        $operatorName = $schedule->operator?->name ?? '-';
+        $anesthesiaName = $schedule->anesthesia?->name ?? '-';
+        $teamNames = $schedule->surgical_team_names;
+
+        // Snapshot before deletion for IT trace
+        $snapshot = [
+            'schedule_id'    => $schedule->id,
+            'patient_name'   => $patientName,
+            'medical_record' => $schedule->patient?->medical_record_no,
+            'gender'         => $schedule->patient?->gender,
+            'operation_date' => $date,
+            'operation_time' => $schedule->operation_time,
+            'ok_level'       => $schedule->ok_level,
+            'diagnosis'      => $schedule->diagnosis,
+            'procedure'      => $schedule->procedure,
+            'operator'       => $operatorName,
+            'anesthesia'     => $anesthesiaName,
+            'teams'          => $teamNames,
+            'cito'           => $schedule->cito,
+            'status'         => $schedule->status,
+            'notes'          => $schedule->notes,
+            'created_by'     => $schedule->creator?->name,
+        ];
+
+        // Audit Log: Record who deleted this schedule with full snapshot
+        ActivityLog::record('HAPUS', 'Jadwal Operasi', "Hapus jadwal operasi: {$patientName} ({$schedule->ok_level}, Jam " . substr((string)$schedule->operation_time, 0, 5) . ", Tindakan: {$schedule->procedure}, Tanggal: {$date})", [
+            'record_id'      => $schedule->id,
+            'patient_name'   => $patientName,
+            'operation_date' => $schedule->operation_date,
+            'old_values'     => $snapshot,
+        ]);
+
         $schedule->delete();
         return redirect()->route('admin.schedules.manage', ['date' => $date])->with('success', 'Jadwal dihapus.');
     }
@@ -84,8 +153,20 @@ class ScheduleController extends Controller
     public function move(Request $r, SurgerySchedule $schedule)
     {
         abort_unless(auth()->user()->canAccess('schedule.manage'), 403);
+        $oldDate = $schedule->operation_date->toDateString();
+        $oldTime = $schedule->operation_time;
         $data = $r->validate(['operation_date' => 'required|date', 'operation_time' => 'required|date_format:H:i']);
+        $data['updated_by_user_id'] = auth()->id();
         $schedule->update($data);
+
+        ActivityLog::record('UBAH', 'Jadwal Operasi', "Pindahkan jadwal operasi: {$schedule->patient?->name} ke {$schedule->operation_date->toDateString()} Jam {$schedule->operation_time}", [
+            'record_id'      => $schedule->id,
+            'patient_name'   => $schedule->patient?->name,
+            'operation_date' => $schedule->operation_date,
+            'old_values'     => ['operation_date' => $oldDate, 'operation_time' => $oldTime],
+            'new_values'     => ['operation_date' => $schedule->operation_date->toDateString(), 'operation_time' => $schedule->operation_time],
+        ]);
+
         return response()->json(['ok' => true, 'message' => 'Jadwal berhasil dipindahkan.']);
     }
 
@@ -99,7 +180,7 @@ class ScheduleController extends Controller
     public function manage(Request $request)
     {
         $date = $request->input('date', now('Asia/Jakarta')->toDateString());
-        $schedules = SurgerySchedule::with(['patient', 'operator', 'anesthesia', 'surgicalTeams'])->whereDate('operation_date', $date)->orderBy('operation_time')->get();
+        $schedules = SurgerySchedule::with(['patient', 'operator', 'anesthesia', 'surgicalTeams', 'creator'])->whereDate('operation_date', $date)->orderBy('operation_time')->get();
         $previous = Carbon::parse($date, 'Asia/Jakarta')->subDay()->toDateString();
         $next = Carbon::parse($date, 'Asia/Jakarta')->addDay()->toDateString();
         $today = now('Asia/Jakarta')->toDateString();
@@ -113,15 +194,22 @@ class ScheduleController extends Controller
         $target = $data['target_date'];
         $schedules = SurgerySchedule::with('surgicalTeams')->whereDate('operation_date', $source)->orderBy('operation_time')->get();
         if ($schedules->isEmpty()) return back()->with('error', 'Tidak ada jadwal operasi pada tanggal sumber.');
-        DB::transaction(function () use ($schedules, $target) {
+        DB::transaction(function () use ($schedules, $target, $source) {
             foreach ($schedules as $s) {
                 $payload = $s->only(['patient_id', 'operator_id', 'anesthesia_id', 'operation_time', 'ok_level', 'diagnosis', 'procedure', 'cito', 'status', 'notes']);
                 $payload['operation_date'] = $target;
                 $payload['status'] = 'Terjadwal';
+                $payload['created_by_user_id'] = auth()->id();
+                $payload['updated_by_user_id'] = auth()->id();
                 $teamIds = $s->surgicalTeams->pluck('id')->map(fn($id) => (int)$id)->all();
                 $new = SurgerySchedule::create($payload);
                 $new->surgicalTeams()->sync($teamIds);
             }
+
+            ActivityLog::record('SALIN', 'Jadwal Operasi', "Salin {$schedules->count()} jadwal operasi dari tanggal " . date('d-m-Y', strtotime($source)) . " ke " . date('d-m-Y', strtotime($target)), [
+                'operation_date' => $target,
+                'new_values'     => ['count' => $schedules->count(), 'source' => $source, 'target' => $target],
+            ]);
         });
         return redirect()->route('admin.schedules.manage', ['date' => $target])->with('success', 'Jadwal operasi berhasil disalin ke ' . date('d-m-Y', strtotime($target)) . ' dan tersimpan pada Manage Jadwal.');
     }
@@ -187,31 +275,155 @@ class ScheduleController extends Controller
         $name = trim((string)$r->input('patient_name'));
         $rm = trim((string)$r->input('patient_medical_record_no'));
         $gender = $r->input('patient_gender');
-        $patient = $existingId ? Patient::find($existingId) : null;
-        if (!$patient && $rm !== '') $patient = Patient::where('medical_record_no', $rm)->first();
-        if (!$patient) $patient = Patient::whereRaw('LOWER(name)=?', [mb_strtolower($name)])->where('gender', $gender)->first();
-        if (!$patient) {
-            $patient = Patient::create(['medical_record_no' => $rm !== '' ? $rm : null, 'name' => $name, 'gender' => $gender, 'birth_date' => null, 'marital_status' => 'Belum Menikah']);
-        } else {
-            $patient->update(['medical_record_no' => $rm !== '' ? $rm : $patient->medical_record_no, 'name' => $name, 'gender' => $gender]);
+
+        $patient = null;
+
+        // 1. Check patient_id from form or existing schedule
+        $pid = $r->input('patient_id') ?: $existingId;
+        if ($pid) {
+            $patient = Patient::find($pid);
         }
-        return $patient;
+
+        // 2. Search by medical record number (exact or normalized)
+        if (!$patient && $rm !== '') {
+            $cleanRm = preg_replace('/[^a-zA-Z0-9]/', '', $rm);
+            $patient = Patient::where('medical_record_no', $rm)
+                ->when($cleanRm !== '', function ($q) use ($cleanRm) {
+                    $q->orWhereRaw("REGEXP_REPLACE(medical_record_no, '[^a-zA-Z0-9]', '') = ?", [$cleanRm]);
+                })->first();
+        }
+
+        // 3. Search by name (case-insensitive trimmed)
+        if (!$patient && $name !== '') {
+            $patient = Patient::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($name)])->first();
+        }
+
+        // 4. If existing patient found, reuse it and only update missing fields
+        if ($patient) {
+            $updates = [];
+            if ($rm !== '' && empty($patient->medical_record_no)) {
+                $updates['medical_record_no'] = $rm;
+            }
+            if ($gender && $patient->gender !== $gender) {
+                $updates['gender'] = $gender;
+            }
+            if (!empty($updates)) {
+                $patient->update($updates);
+            }
+            return $patient;
+        }
+
+        // 5. Only create if truly a new patient
+        return Patient::create([
+            'medical_record_no' => $rm !== '' ? $rm : null,
+            'name' => $name,
+            'gender' => $gender,
+            'birth_date' => null,
+            'marital_status' => 'Belum Menikah',
+        ]);
     }
 
     private function resolveTeamIds(array $ids, array $names): array
     {
         $resolved = array_values(array_unique(array_map('intval', $ids)));
-        foreach ($names as $name) {
-            $name = trim((string)$name);
-            if ($name === '') continue;
-            $existing = SurgicalTeam::whereRaw('LOWER(name)=?', [mb_strtolower($name)])->first();
-            if ($existing) {
-                $resolved[] = $existing->id;
-                continue;
+        $clean = fn($s) => preg_replace('/[^a-z0-9]/', '', mb_strtolower((string)$s));
+
+        // Known alias/nickname map for hospital staff
+        $aliases = [
+            'dedisaputra' => 'dedisaputra',
+            'dediputra' => 'dedisaputra',
+            'jonny' => 'jonny',
+            'jony' => 'jonny',
+            'dedistt' => 'dedistt',
+            'dedisttt' => 'dedistt',
+            'hanum' => 'hanum',
+            'hamum' => 'hanum',
+            'samawi' => 'samawi',
+            'sam' => 'samawi',
+            'samawai' => 'samawi',
+            'maulan' => 'maulana',
+            'maulana' => 'maulana',
+            'maulna' => 'maulana',
+            'edward' => 'edward',
+            'edwrd' => 'edward',
+            'nani' => 'nani',
+            'susi' => 'susi',
+            'susii' => 'susi',
+            'diana' => 'diana',
+            'wenny' => 'wenny',
+            'weny' => 'wenny',
+            'weeny' => 'wenny',
+            'aris' => 'aris',
+            'putra' => 'putra',
+            'putara' => 'putra',
+            'masran' => 'masran',
+            'defyna' => 'defyna',
+            'yuliaadha' => 'yuliaadha',
+            'defynayuliaadha' => 'defyna',
+            'sarah' => 'sarah',
+            'dirman' => 'dirman',
+            'mahdini' => 'mahdini',
+            'madhaji' => 'mahdini',
+        ];
+
+        // Cache all existing active teams
+        $allTeams = SurgicalTeam::where('active', true)->get();
+
+        foreach ($names as $rawName) {
+            $rawName = trim((string)$rawName);
+            if ($rawName === '') continue;
+
+            // Split in case the user typed multiple names separated by comma, semicolon, slash, or dot
+            $tokens = preg_split('/[,;\/\n\r]+|\s+\.\s*|\b\s*\.\s*(?=[a-zA-Z])/', $rawName);
+            if (!$tokens || count($tokens) === 0) {
+                $tokens = [$rawName];
             }
-            $created = SurgicalTeam::create(['name' => $name, 'role' => 'Perawat', 'active' => true]);
-            $resolved[] = $created->id;
+
+            foreach ($tokens as $token) {
+                $token = trim($token);
+                if ($token === '') continue;
+
+                $tokClean = $clean($token);
+                if ($tokClean === '') continue;
+
+                $targetClean = $aliases[$tokClean] ?? $tokClean;
+
+                // 1. Search in existing cached teams
+                $found = $allTeams->first(function ($t) use ($token, $tokClean, $targetClean, $clean) {
+                    $tClean = $clean($t->name);
+                    return mb_strtolower(trim($t->name)) === mb_strtolower($token)
+                        || $tClean === $tokClean
+                        || $tClean === $targetClean;
+                });
+
+                if ($found) {
+                    $resolved[] = $found->id;
+                    continue;
+                }
+
+                // 2. Check directly in DB (case-insensitive)
+                $dbFound = SurgicalTeam::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($token)])->first();
+                if ($dbFound) {
+                    $resolved[] = $dbFound->id;
+                    continue;
+                }
+
+                // If token contains punctuation or is too short, do not create garbage
+                if (strlen($token) < 2 || preg_match('/[,;.]/', $token)) {
+                    continue;
+                }
+
+                // 3. Only create if it's truly a new genuine staff member
+                $created = SurgicalTeam::create([
+                    'name' => ucwords(mb_strtolower($token)),
+                    'role' => 'Perawat',
+                    'active' => true,
+                ]);
+                $allTeams->push($created);
+                $resolved[] = $created->id;
+            }
         }
+
         return array_values(array_unique(array_map('intval', $resolved)));
     }
 }

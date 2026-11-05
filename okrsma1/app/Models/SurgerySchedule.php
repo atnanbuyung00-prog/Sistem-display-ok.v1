@@ -6,11 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class SurgerySchedule extends Model
 {
-    protected $fillable = ['patient_id', 'operator_id', 'anesthesia_id', 'operation_date', 'operation_time', 'ok_level', 'diagnosis', 'procedure', 'cito', 'status', 'notes'];
+    protected $fillable = ['patient_id', 'operator_id', 'anesthesia_id', 'operation_date', 'operation_time', 'ok_level', 'diagnosis', 'procedure', 'cito', 'status', 'notes', 'created_by_user_id', 'updated_by_user_id'];
     protected $appends = ['surgical_team_names'];
     protected function casts(): array
     {
         return ['operation_date' => 'date', 'cito' => 'boolean'];
+    }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by_user_id');
     }
     public function patient()
     {
