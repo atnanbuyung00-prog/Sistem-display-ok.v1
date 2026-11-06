@@ -52,7 +52,7 @@ Sumber tampilan: [display Blade](okrsma1/resources/views/display/index.blade.php
 
 ## Status saat ini
 
-Branch utama berisi kode aplikasi dan aset dokumentasi. Konfigurasi lokal, dependensi terpasang, cadangan database, log, sesi, cache, dan foto unggahan dikelola di masing-masing lingkungan. Template [`.env.example`](okrsma1/.env.example) menyediakan pengaturan awal dengan `APP_KEY` kosong. Seeder lokal hanya membuat akun admin awal.
+Branch utama berisi kode aplikasi dan aset dokumentasi. Konfigurasi lokal, dependensi terpasang, cadangan database, log, sesi, cache, dan foto unggahan dikelola di masing-masing lingkungan. Seeder lokal hanya membuat akun admin awal.
 
 ## Fitur yang ada di source
 
@@ -92,15 +92,32 @@ Direktori [`okrsma1/`](okrsma1/) berisi:
 
 ## Instalasi lokal
 
-1. Ambil kode dan buat konfigurasi lokal.
+1. Ambil kode aplikasi.
 
    ```bash
    git clone https://github.com/atnanbuyung00-prog/Sistem-display-ok.v1.git
    cd Sistem-display-ok.v1/okrsma1
-   cp .env.example .env
    ```
 
-2. Buat database MySQL kosong dan akun lokal yang memiliki izin pada database tersebut. Atur `DB_DATABASE`, `DB_USERNAME`, dan `DB_PASSWORD` di `.env`, lalu jalankan:
+2. Buat database MySQL kosong dan akun lokal yang memiliki izin pada database tersebut. Buat file `okrsma1/.env` dengan konfigurasi berikut. Sesuaikan nama database, username, dan password dengan pengaturan MySQL lokal.
+
+   ```dotenv
+   APP_ENV=local
+   APP_KEY=
+   APP_DEBUG=true
+   APP_URL=http://127.0.0.1:8000
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=okrsma1
+   DB_USERNAME=akun_mysql_lokal
+   DB_PASSWORD="password_mysql_lokal"
+   SESSION_DRIVER=file
+   CACHE_STORE=file
+   QUEUE_CONNECTION=sync
+   ```
+
+3. Pasang dependensi, buat kunci aplikasi, lalu jalankan migrasi.
 
    ```bash
    composer install
@@ -108,7 +125,7 @@ Direktori [`okrsma1/`](okrsma1/) berisi:
    php artisan migrate
    ```
 
-3. Untuk percobaan lokal dengan database baru, jalankan `php artisan db:seed`. Seeder membuat akun `admin` dengan password awal `admin`. Ganti password sebelum memberikan akses kepada pihak lain.
+4. Untuk percobaan lokal dengan database baru, jalankan `php artisan db:seed`. Seeder membuat akun `admin` dengan password awal `admin`. Ganti password sebelum memberikan akses kepada pihak lain.
 
 ## Upgrade instalasi yang sudah ada
 
@@ -164,4 +181,4 @@ Server bawaan ini untuk pengembangan lokal. Pada web server, arahkan document ro
 
 ## Verifikasi
 
-Impor kode, pemeriksaan konfigurasi contoh, dan pemeriksaan perubahan Git telah dilakukan. Jalankan pengujian migrasi, alur aplikasi, dan restore pada lingkungan uji sebelum memakai versi ini di produksi.
+Impor kode dan pemeriksaan perubahan Git telah dilakukan. Jalankan pengujian migrasi, alur aplikasi, dan restore pada lingkungan uji sebelum memakai versi ini di produksi.
